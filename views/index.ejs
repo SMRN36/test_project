@@ -1,98 +1,134 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Todo App</title>
-  </head>
-  <body>
-    <h1>Todo List</h1>
-    <form action="/todos" method="post">
-      <label for="name">TodoName:</label>
-      <input type="text" id="name" name="name" required>
-      <br>
-      <label for="description">Description:</label>
-      <input type="text" id="description" name="description" required>
-      <br>
-      <button type="submit">Add Item</button>
-    </form>
-   
-    <div id="todos">
-      <h2>Todo Items</h2>
-      <ul id="todo-list"></ul>
-    </div>
-    <div id="completed">
-      <h2>Completed Items</h2>
-      <ul id="completed-list"></ul>
-    </div>
-    <script>
-      const todoList = document.getElementById('todo-list');
-      const completedList = document.getElementById('completed-list');
-    
-      // Function to add a new todo item to the list
-      const addTodo = (todo) => {
-        const li = document.createElement('li');
-        li.innerText = todo.name + ' - ' + todo.description;
-        
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.addEventListener('change', () => {
-          if (checkbox.checked) {
-            // Move item to completed list
-            completedList.appendChild(li);
-          } else {
-            // Move item back to todo list
-            todoList.appendChild(li);
-          }
-        });
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.innerText = 'Delete';
-        deleteBtn.addEventListener('click', () => {
-          li.remove();
-        });
-        
-        li.appendChild(checkbox);
-        li.appendChild(deleteBtn);
-        
-        todoList.appendChild(li);
-      };
-    
-      // Function to fetch all todo items from the server and add them to the list
-      const fetchTodos = async () => {
-        const response = await fetch('/todos');
-        const todos = await response.json();
-        
-        todos.forEach(todo => {
-          addTodo(todo);
-        });
-      };
-      
-      fetchTodos();
-    
-      // Function to handle form submission
-      const handleSubmit = async (event) => {
-        event.preventDefault();
-        
-        const formData = new FormData(event.target);
-        const name = formData.get('name');
-        const description = formData.get('description');
-        
-        const response = await fetch('/todos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ name, description })
-        });
-        
-        if (response.ok) {
-          const todo = await response.json();
-          addTodo(todo);
-          event.target.reset();
-        }
-      };
-      
-      const form = document.querySelector('form');
-      form.addEventListener('submit', handleSubmit);
-    </script>
-    </body>
-    </html>
+<head>
+  <meta charset="UTF-8">
+  <title>ToDo List</title>
+</head>
+<style>
+  body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  margin-top: 20px;
+  margin-left: 50px;
+}
+form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+label {
+  font-weight: bold;
+  margin-top: 10px;
+  margin-left: 50px;
+}
+
+input[type="text"] {
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-top: 5px;
+  width: 30%;
+  margin-left: 50px;
+}
+
+button[type="submit"] {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  background-color: #0077CC;
+  color: #fff;
+  cursor: pointer;
+  margin-top: 10px;
+  width: 20%;
+  justify-content: center;
+  margin-left: 50px;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+}
+
+input[type="checkbox"] {
+  margin-right: 10px;
+  margin-left: 50px;
+}
+
+button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  background-color: #CC0000;
+  color: #fff;
+  cursor: pointer;
+}
+
+</style>
+<body>
+  <h1>ToDo List</h1>
+
+  <h2>Add a new ToDo:</h2>
+
+  <form method="post" action="/">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name"><br>
+
+    <label for="description">Description:</label>
+    <input type="text" id="description" name="description"><br>
+
+    <button type="submit">Add</button>
+  </form>
+  <h2>ToDo List:</h2>
+  <ul>
+    <% todos.forEach(todo => { %>
+      <% if (!todo.completed) { %>
+        <li>
+          <input type="checkbox" id="todo-<%= todo.id %>" onchange="updateTodo(<%= todo.id %>)">
+          <label for="todo-<%= todo.id %>"><%= todo.name %> - <%= todo.description %></label>
+          <button onclick="deleteTodo(<%= todo.id %>)">Delete</button>
+        </li>
+      <% } %>
+    <% }) %>
+  </ul>
+  <h2>Completed List:</h2>
+  <ul>
+    <% todos.forEach(todo => { %>
+      <% if (todo.completed) { %>
+        <li>
+          <input type="checkbox" id="todo-<%= todo.id %>" onchange="updateTodo(<%= todo.id %>)" checked>
+          <label for="todo-<%= todo.id %>"><%= todo.name %> - <%= todo.description %></label>
+          <button onclick="deleteTodo(<%= todo.id %>)">Delete</button>
+        </li>
+      <% } %>
+    <% }) %>
+  </ul>
+  <script>
+    async function updateTodo(id) {
+      await fetch(`/todos/${id}`, { method: 'PUT' });
+      location.reload();
+    }
+
+    async function deleteTodo(id) {
+      await fetch(`/todos/${id}`, { method: 'DELETE' });
+      location.reload();
+    }
+  </script>
+</body>
+</html>

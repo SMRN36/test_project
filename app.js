@@ -8,19 +8,30 @@ const sequelize = new Sequelize('test_project', 'root', 'Mysql@simran', {
   host: 'localhost'
 });
 
+// test the database connection
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Connection has been established successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+})();
+
 // define the Todo model
 const Todo = sequelize.define('Todo', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
-    primaryKey: true,
     primaryKey: true
   },
   name: {
     type: DataTypes.STRING,
+    defaultValue: ''
   },
   description: {
     type: DataTypes.STRING,
+    defaultValue: ''
   },
   completed: {
     type: DataTypes.BOOLEAN,
@@ -30,7 +41,12 @@ const Todo = sequelize.define('Todo', {
 
 // sync the database
 (async () => {
-  await sequelize.sync();
+  try {
+    await sequelize.sync();
+    console.log('All models were synchronized successfully.');
+  } catch (error) {
+    console.error('Unable to sync the database:', error);
+  }
 })();
 
 // set up the view engine
@@ -41,35 +57,55 @@ app.use(express.urlencoded({ extended: true }));
 
 // set up routes
 app.get('/', async (req, res) => {
-  const todos = await Todo.findAll();
-  res.render('index', { todos });
+  try {
+    const todos = await Todo.findAll();
+    res.render('index', { todos });
+  } catch (error) {
+    console.error('Unable to fetch todos:', error);
+    res.status(500).send('Something went wrong');
+  }
 });
 
 app.post('/todos', async (req, res) => {
-  const { name, description } = req.body;
-  const todo = await Todo.create({ name, description });
-  res.redirect('/');
+  try {
+    const { name, description } = req.body;
+    const todo = await Todo.create({ name, description });
+    res.redirect('/');
+  } catch (error) {
+    console.error('Unable to create todo:', error);
+    res.status(500).send('Something went wrong');
+  }
 });
 
 app.put('/todos/:id', async (req, res) => {
-  const { id } = req.params;
-  const todo = await Todo.findByPk(id);
-  if (!todo) {
-    return res.status(404).send('Todo not found');
+  try {
+    const { id } = req.params;
+    const todo = await Todo.findByPk(id);
+    if (!todo) {
+      return res.status(404).send('Todo not found');
+    }
+    todo.completed = true;
+    await todo.save();
+    res.send('Todo marked as completed');
+  } catch (error) {
+    console.error('Unable to update todo:', error);
+    res.status(500).send('Something went wrong');
   }
-  todo.completed = true;
-  await todo.save();
-  res.send('Todo marked as completed');
 });
 
 app.delete('/todos/:id', async (req, res) => {
-  const { id } = req.params;
-  const todo = await Todo.findByPk(id);
-  if (!todo) {
-    return res.status(404).send('Todo not found');
+  try {
+    const { id } = req.params;
+    const todo = await Todo.findByPk(id);
+    if (!todo) {
+      return res.status(404).send('Todo not found');
+    }
+    await todo.destroy();
+    res.send('Todo deleted');
+  } catch (error) {
+    console.error('Unable to delete todo:', error);
+    res.status(500).send('Something went wrong');
   }
-  await todo.destroy();
-  res.send('Todo deleted');
 });
 
 // start the server
